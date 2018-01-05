@@ -4,9 +4,9 @@ import org.scalajs.dom
 import org.scalajs.dom.raw.{CanvasRenderingContext2D, HTMLCanvasElement}
 
 object MazeApp {
-  val length = 16
-  val offset = 2
-  val thickness = offset * 2
+  val length: Int = 16
+  val offset: Int = 2
+  val thickness: Int = offset * 2
 
 
   def main(args: Array[String]): Unit = {
@@ -37,15 +37,8 @@ object MazeApp {
     context.fillRect(0, 0, canvas.width, canvas.height)
 
     context.fillStyle = "#FFFFFF"
-
-    def average(vals: Int*): Double = {
-      val s = vals.sum
-      s / vals.length
-    }
-
     for (e <- openings) yield {
       val r = e.tunnel(length)
-      println(r)
       context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
     }
     println("Game end")
