@@ -53,10 +53,10 @@ object MazeApp {
     ctx.strokeStyle = "black"
     ctx.beginPath()
 
-    renderInfo.foreach{
-      case ((x1,y1),(x2,y2)) =>
-        ctx.moveTo(x1,y1)
-        ctx.lineTo(x2,y2)
+    renderInfo.foreach {
+      case ((x1, y1), (x2, y2)) =>
+        ctx.moveTo(x1, y1)
+        ctx.lineTo(x2, y2)
     }
     ctx.stroke()
 
