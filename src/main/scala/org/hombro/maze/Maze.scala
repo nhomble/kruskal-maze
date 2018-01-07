@@ -6,7 +6,7 @@ package object maze {
 
   // maze parameters: we specify number of cells in horizontal and vertical direction
   // as well as the physical height and width of the maze
-  case class MazeParams(nx: Int, ny: Int, width: Double, height: Double)
+  case class MazeParams(nx: Int, ny: Int)
 
   // we'll idetify cells by their integer ids
   type CellID = Int
@@ -15,7 +15,7 @@ package object maze {
   // we represent side of a cell as an ordered tuple of two integers (c1,c2)
   // where c1 and c2 are cell ids and c1 < c2
   type Side = (Int, Int)
-  type Coord = (Double, Double)
+  type Coord = (Int, Int)
 
   def generateEdges(params: MazeParams): List[Side] = {
     //vertical edges
@@ -97,10 +97,12 @@ package object maze {
     res
   }
 
-  def getRenderingInfo(params: MazeParams, edges: List[Side]): List[(Coord, Coord)] = {
+
+  // generates edge endpoints in the abstract coordinate system
+  // where bottom left cell has coordinates (0,0) and (1,1) for bottom left and top right
+  // vertex correspondingly
+  def getAbstractRenderingInfo(params: MazeParams, edges: List[Side]): List[(Coord, Coord)] = {
     val (nx, ny) = (params.nx, params.ny)
-    val dh = params.width / nx
-    val dv = params.height / ny
     edges.map {
       case (c1, c2) =>
         val (i1, j1) = (c1 % nx, c1 / nx)
@@ -108,13 +110,13 @@ package object maze {
         (i1 == i2, j1 == j2) match {
           //horizontal edge
           case (true, false) =>
-            val (left_x, right_x) = (i1 * dh, (i1 + 1) * dh)
-            val y = (j1 + 1) * dv
+            val (left_x, right_x) = (i1, i1 + 1)
+            val y = j1 + 1
             ((left_x, y), (right_x, y))
           //vertical edge
           case (false, true) =>
-            val (bottom_y, top_y) = (j1 * dv, (j1 + 1) * dv)
-            val x = (i1 + 1) * dh
+            val (bottom_y, top_y) = (j1, j1 + 1)
+            val x = i1 + 1
             ((x, bottom_y), (x, top_y))
           case _ => throw new RuntimeException("Poop")
         }
@@ -124,7 +126,7 @@ package object maze {
   def generateKruskal(params: MazeParams): List[(Coord, Coord)] = {
     val edges = generateEdges(params)
     val remaining = removeEdgesMut(params, edges)
-    getRenderingInfo(params, remaining)
+    getAbstractRenderingInfo(params, remaining)
   }
 }
 

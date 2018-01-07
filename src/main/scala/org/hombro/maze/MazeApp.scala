@@ -46,9 +46,26 @@ object MazeApp {
 
   private def gameStart2(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Unit = {
     println("Game start")
+    val (nx,ny) = (canvas.width / length, canvas.height / length)
+    val (dx,dy) = (length, length)
+    val params = MazeParams(nx,ny)
+    val abstractRenderInfo = generateKruskal(params)
+    val renderInfo = abstractRenderInfo.map{
+      case((x1,y1),(x2,y2)) => ((x1*dx,y1*dy),(x2*dx,y2*dy))
+    }
+    //draw maze boundary
+    val (bl_x, bl_y, tr_x, tr_y) = (0, 0, canvas.width, canvas.height)
+    ctx.lineWidth = 5
+    ctx.strokeStyle = "green"
+    ctx.beginPath()
+    ctx.moveTo(bl_x,bl_y)
+    ctx.lineTo(tr_x,bl_y)
+    ctx.lineTo(tr_x,tr_y)
+    ctx.lineTo(bl_x,tr_y)
+    ctx.lineTo(bl_x,bl_y)
+    ctx.stroke()
 
-    val params = MazeParams(canvas.width / length, canvas.height / length, canvas.width, canvas.height)
-    val renderInfo = generateKruskal(params)
+    //draw maze itself
     ctx.lineWidth = 2
     ctx.strokeStyle = "black"
     ctx.beginPath()
