@@ -22,7 +22,7 @@ object MazeApp {
 
     dom.document.body.appendChild(canvas)
 
-    gameStart(canvas, context)
+    gameStart2(canvas, context)
   }
 
   private def gameStart(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D): Unit = {
@@ -41,6 +41,25 @@ object MazeApp {
       val r = e.tunnel(length)
       context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
     }
+    println("Game end")
+  }
+
+  private def gameStart2(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Unit = {
+    println("Game start")
+
+    val params = MazeParams(canvas.width / length, canvas.height / length, canvas.width, canvas.height)
+    val renderInfo = generateKruskal(params)
+    ctx.lineWidth = 2
+    ctx.strokeStyle = "black"
+    ctx.beginPath()
+
+    renderInfo.foreach{
+      case ((x1,y1),(x2,y2)) =>
+        ctx.moveTo(x1,y1)
+        ctx.lineTo(x2,y2)
+    }
+    ctx.stroke()
+
     println("Game end")
   }
 }
