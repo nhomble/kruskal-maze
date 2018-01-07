@@ -30,14 +30,12 @@ object MazeApp {
 
     val openings = MazeGenerator.create(canvas.width / length, canvas.height / length)
     println(s"Found ${openings.size} openings")
-    /*
-    Openings represents the edges we need to tunnel through, remember it's a scaled down version
-     */
+
     context.fillStyle = "#000000"
     context.fillRect(0, 0, canvas.width, canvas.height)
 
     context.fillStyle = "#FFFFFF"
-    for (e <- openings) yield {
+    openings.foreach { e =>
       val r = e.tunnel(length)
       context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
     }
