@@ -3,11 +3,13 @@ package org.hombro.maze
 import org.scalajs.dom
 import org.scalajs.dom.raw.{CanvasRenderingContext2D, HTMLCanvasElement}
 
+import scala.scalajs.js
+
 object MazeApp {
   val length: Int = 16
   val offset: Int = 2
   val thickness: Int = offset * 2
-
+  val timer: Int = 10
 
   def main(args: Array[String]): Unit = {
     println("Init")
@@ -35,9 +37,15 @@ object MazeApp {
     context.fillRect(0, 0, canvas.width, canvas.height)
 
     context.fillStyle = "#FFFFFF"
-    openings.foreach { e =>
-      val r = e.tunnel(length)
-      context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
+    var ptr = 0
+    js.timers.setInterval(timer) {
+      openings.lift(ptr) match {
+        case Some(e) =>
+          val r = e.tunnel(length)
+          context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
+          ptr += 1
+        case None =>
+      }
     }
     println("Game end")
   }
