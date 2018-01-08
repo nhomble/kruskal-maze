@@ -1,5 +1,6 @@
 package org.hombro.maze
 
+
 import scala.collection.mutable
 
 object MazeGenerator {
@@ -15,7 +16,7 @@ object MazeGenerator {
         board.lift(v.x).flatMap(row => row.lift(v.y + 1))
       ).flatten.map(other => Edge(v, other))
     }).flatten
-    val sets = vertices.map(v => v -> Set[Vertex](v)).toMap
+    val sets = vertices.map(v => v -> VertexDisJointSet(v)).toMap
     println(s"Total edges ${edges.size}")
     kruskal(mutable.Map() ++ sets, edges)
   }
@@ -23,22 +24,39 @@ object MazeGenerator {
   /**
     * Hardly a proper kruskal since I'm being stupid lazy instead of properly doing a disjoint set.
     */
-  private def kruskal(sets: mutable.Map[Vertex, Set[Vertex]], edges: List[Edge]) = {
+  private def kruskal(sets: mutable.Map[Vertex, VertexDisJointSet], edges: List[Edge]) = {
     val openings = mutable.ListBuffer[Edge]()
     val shuffled = util.Random.shuffle(edges)
 
     for (e <- shuffled) yield {
       val s1 = sets(e.u)
       val s2 = sets(e.v)
-      if (s1.intersect(s2).isEmpty) {
-        val rez = s1.union(s2)
-        for (c <- rez) yield {
-          sets(c) = rez
-        }
+      if (!s1.intersects(s2)) {
+        s1.inherit(s2)
         openings.append(e)
       }
     }
     openings.toList
+  }
+}
+
+case class VertexDisJointSet(private val vertex: Vertex) {
+  private var _root: Option[VertexDisJointSet] = None
+
+  def root: VertexDisJointSet = {
+    _root match {
+      case Some(r) => r.root
+      case None => this
+    }
+  }
+
+  def inherit(other: VertexDisJointSet): VertexDisJointSet = {
+    other.root._root = Some(this)
+    this
+  }
+
+  def intersects(other: VertexDisJointSet): Boolean = {
+    root.vertex.equals(other.root.vertex)
   }
 }
 
