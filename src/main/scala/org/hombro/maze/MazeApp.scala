@@ -6,7 +6,7 @@ import org.scalajs.dom.raw.{CanvasRenderingContext2D, HTMLCanvasElement}
 import scala.scalajs.js
 
 object MazeApp {
-  val length: Int = 16
+  val length: Int = 5
   val offset: Int = 2
   val thickness: Int = offset * 2
   val timer: Int = 10
@@ -54,8 +54,8 @@ object MazeApp {
     println("Game start")
     val (nx,ny) = (canvas.width / length, canvas.height / length)
     val (dx,dy) = (length, length)
-    val params = MazeParams(nx,ny)
-    val abstractRenderInfo = generateKruskal(params)
+    implicit val params = MazeParams(nx,ny)
+    val abstractRenderInfo = MazeGenerator3.generate
     val renderInfo = abstractRenderInfo.map{
       case((x1,y1),(x2,y2)) => ((x1*dx,y1*dy),(x2*dx,y2*dy))
     }

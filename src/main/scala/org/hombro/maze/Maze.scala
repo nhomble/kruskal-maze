@@ -8,16 +8,41 @@ package object maze {
   // as well as the physical height and width of the maze
   case class MazeParams(nx: Int, ny: Int)
 
+  //helper functions to transform between cell coordinates and cell IDs
+  object Util {
+    //given cell coordinates, return cell id
+    def coordToCellID(coord: Coord)(implicit params: MazeParams): CellID = coord._1 + coord._2 * params.nx
+
+    //given cell id return it's coordinates
+    def cellIDToCoord(id: CellID)(implicit params: MazeParams): Coord = (id % params.nx, id / params.nx)
+  }
+
   // we'll idetify cells by their integer ids
   type CellID = Int
   // Set label
   type Label = Int
   // we represent side of a cell as an ordered tuple of two integers (c1,c2)
   // where c1 and c2 are cell ids and c1 < c2
-  type Side = (Int, Int)
+  // TODO: for side ordering requirement we need to somehow enforce the order stated above
+  type Side = (CellID, CellID)
   type Coord = (Int, Int)
+  type RefEdgeList = List[(Coord, Coord)]
 
-  def generateEdges(params: MazeParams): List[Side] = {
+  trait Sortable[A]{
+    def sort:A
+  }
+
+  implicit def sortableIntTuple(s:Side) = new Sortable[Side] { def sort:Side = if(s._1 < s._2) (s._1,s._2) else (s._2, s._1)}
+
+  // TODO: perhaps need to make this safer with an Option[A] return type
+  def randomSetElement[A](s: mutable.Set[A]): A = {
+    val n = util.Random.nextInt(s.size)
+    s.iterator.drop(n).next
+  }
+
+  // generates all the edges in a mesh, except for the boundary ones
+  // TODO: can probably be optimized
+  def generateAllEdges(implicit params: MazeParams): List[Side] = {
     //vertical edges
     val vEdges = for {
       i <- 0 to params.nx - 2
@@ -36,77 +61,22 @@ package object maze {
 
     vEdges.toList ++ hEdges.toList
   }
+  // given a set of edges and maze parameters, returns the complementary set of edges
+  // original set + complementary set = all edges
+  def getEdgeSetComplement(edges:List[Side])(implicit params: MazeParams):List[Side] =
+    (generateAllEdges.toSet diff edges.map(_.sort).toSet).toList
 
-  def removeEdges(params: MazeParams, edges: List[Side]): List[Side] = {
-    val cellLabels: Map[CellID, Label] = (0 until params.nx * params.ny).map(id => (id, id)).toMap
-    val cellSets: Map[Label, Set[CellID]] = Map()
-    val shuffled = util.Random.shuffle(edges)
-
-    def remove(input: List[Side],
-               res: List[Side],
-               labels: Map[CellID, Label],
-               sets: Map[Label, Set[CellID]]): List[Side] = {
-      input match {
-        case (c1, c2) :: t =>
-          val l1 = labels.getOrElse(c1, c1)
-          val l2 = labels.getOrElse(c2, c2)
-          //println(s"considering edge ${(c1,c2)}, labels are ${(l1,l2)}")
-          if (l1 == l2)
-          //if cells are in the same set we keep the edge
-            remove(t, (c1, c2) :: res, labels, sets)
-          else {
-            val s1 = sets.getOrElse(l1, Set(c1))
-            val s2 = sets.getOrElse(l2, Set(c2))
-            val (from, to) = if (s1.size < s2.size) (l1, l2) else (l2, l1)
-            //merge cell sets
-            val newSet = s1.union(s2)
-            //update labels
-            val newLabels = labels.map { case (k, v) => if (v == from) (k, to) else (k, v) }
-            //println(s"labels are different we will update $from to $to, new map is $newLabels, new set is $newSet")
-            remove(t, res, newLabels, sets.updated(to, newSet))
-          }
-        case Nil => res
-      }
-    }
-
-    remove(shuffled, Nil, cellLabels, cellSets)
-  }
-
-  def removeEdgesMut(params: MazeParams, edges: List[Side]): List[Side] = {
-    val cellLabels: mutable.Map[CellID, Label] = mutable.Map((0 until params.nx * params.ny).map(id => (id, id)): _*)
-    val cellSets: mutable.Map[Label, Set[CellID]] = mutable.Map()
-    val shuffled = util.Random.shuffle(edges)
-    var res: List[Side] = Nil
-    shuffled.foreach {
-      case (c1, c2) =>
-        val l1 = cellLabels.getOrElse(c1, c1)
-        val l2 = cellLabels.getOrElse(c2, c2)
-        if (l1 == l2)
-          res = (c1, c2) :: res
-        else {
-          val s1 = cellSets.getOrElse(l1, Set(c1))
-          val s2 = cellSets.getOrElse(l2, Set(c2))
-          val (toLabel, fromSet) = if (s1.size < s2.size) (l2, s1) else (l1, s2)
-          //merge cell sets
-          cellSets(toLabel) = s1.union(s2)
-          //update labels
-          println(s"updating ${fromSet.size} labels")
-          fromSet.foreach(id => cellLabels(id) = toLabel)
-        }
-    }
-    res
-  }
-
-
-  // generates edge endpoints in the abstract coordinate system
+  // generates edge endpoints in the reference coordinate system
   // where bottom left cell has coordinates (0,0) and (1,1) for bottom left and top right
-  // vertex correspondingly
-  def getAbstractRenderingInfo(params: MazeParams, edges: List[Side]): List[(Coord, Coord)] = {
+  // vertices correspondingly
+  def getReferenceRenderingInfo(edges: List[Side])(implicit params: MazeParams): RefEdgeList = {
     val (nx, ny) = (params.nx, params.ny)
     edges.map {
-      case (c1, c2) =>
-        val (i1, j1) = (c1 % nx, c1 / nx)
-        val (i2, j2) = (c2 % nx, c2 / nx)
+      side =>
+        //make sure cells are sorted to save on match branches below
+        val (c1, c2) = side.sort
+        val (i1, j1) = Util.cellIDToCoord(c1)
+        val (i2, j2) = Util.cellIDToCoord(c2)
         (i1 == i2, j1 == j2) match {
           //horizontal edge
           case (true, false) =>
@@ -121,12 +91,6 @@ package object maze {
           case _ => throw new RuntimeException("Poop")
         }
     }
-  }
-
-  def generateKruskal(params: MazeParams): List[(Coord, Coord)] = {
-    val edges = generateEdges(params)
-    val remaining = removeEdgesMut(params, edges)
-    getAbstractRenderingInfo(params, remaining)
   }
 }
 
