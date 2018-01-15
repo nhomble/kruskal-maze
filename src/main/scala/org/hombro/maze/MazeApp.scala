@@ -24,7 +24,7 @@ object MazeApp {
 
     dom.document.body.appendChild(canvas)
 
-    gameStart2(canvas, context)
+    gameStart(canvas, context)
   }
 
   private def gameStart(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D): Unit = {
@@ -38,37 +38,36 @@ object MazeApp {
 
     context.fillStyle = "#FFFFFF"
     var ptr = 0
-    js.timers.setInterval(timer) {
-      openings.lift(ptr) match {
-        case Some(e) =>
-          val r = e.tunnel(length)
-          context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
-          ptr += 1
-        case None =>
+    openings.foreach(e => {
+      js.timers.setTimeout(timer) {
+        val r = e.tunnel(length)
+        context.fillRect(r._1 * length + offset, r._2 * length + offset, r._3 - thickness, r._4 - thickness)
+        ptr += 1
       }
-    }
+    })
+
     println("Game end")
   }
 
   private def gameStart2(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D): Unit = {
     println("Game start")
-    val (nx,ny) = (canvas.width / length, canvas.height / length)
-    val (dx,dy) = (length, length)
-    implicit val params = MazeParams(nx,ny)
+    val (nx, ny) = (canvas.width / length, canvas.height / length)
+    val (dx, dy) = (length, length)
+    implicit val params = MazeParams(nx, ny)
     val abstractRenderInfo = MazeGenerator3.generate
-    val renderInfo = abstractRenderInfo.map{
-      case((x1,y1),(x2,y2)) => ((x1*dx,y1*dy),(x2*dx,y2*dy))
+    val renderInfo = abstractRenderInfo.map {
+      case ((x1, y1), (x2, y2)) => ((x1 * dx, y1 * dy), (x2 * dx, y2 * dy))
     }
     //draw maze boundary
     val (bl_x, bl_y, tr_x, tr_y) = (0, 0, canvas.width, canvas.height)
     ctx.lineWidth = 5
     ctx.strokeStyle = "green"
     ctx.beginPath()
-    ctx.moveTo(bl_x,bl_y)
-    ctx.lineTo(tr_x,bl_y)
-    ctx.lineTo(tr_x,tr_y)
-    ctx.lineTo(bl_x,tr_y)
-    ctx.lineTo(bl_x,bl_y)
+    ctx.moveTo(bl_x, bl_y)
+    ctx.lineTo(tr_x, bl_y)
+    ctx.lineTo(tr_x, tr_y)
+    ctx.lineTo(bl_x, tr_y)
+    ctx.lineTo(bl_x, bl_y)
     ctx.stroke()
 
     //draw maze itself
